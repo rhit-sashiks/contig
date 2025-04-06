@@ -568,5 +568,106 @@ public class AdjacencyMatrixGraph<T> {
 		}
 	}
 	
-	// Tries to find the max cliques of a graph
+	// WEB CITATION: https://dl.acm.org/doi/pdf/10.1145/362342.362367 and https://dl.acm.org/doi/pdf/10.1145/321694.321698
+	// and https://pure.tue.nl/ws/files/2360457/54264.pdf and https://arxiv.org/pdf/1103.0318
+	// Max cliques of a graph
+	//
+	// Basic idea of the algo is simple in concept:
+	// compsub is the set that will be
+	// extended or shrunk by new points while
+	// going through the graph and backtracking
+	//
+	// EXT OPTIMIZATION: The candidates to add as well as the 
+	// candidates already tried as an extension
+	// can be placed in one big array
+	// with 0 to ne (end of not) and ce (end of candidates) 
+	//
+	// As maximum cliques (and Hamiltonian path) is the main NP complete bit
+	// of contig reassembly, it is the bit which needs
+	// to be fast
+	//
+	// IMPORTANT NOTE: While not explicitly documented, this algorithm seems to only produce results
+	// only produces results if A does not connect to itself
+	public ArrayList<Set<T>> maxCliques() {
+		if(this.indexToKey.isEmpty()) {
+			return new ArrayList<>();
+		}
+		
+		for(int i = 0; i < this.matrix.length; i++) {
+			this.matrix[i][i] = 0;
+		}
+				
+		ArrayList<Set<T>> cliques = new ArrayList<>(); 
+		
+		this.extend(cliques, new HashSet<>(), new HashSet<>(this.indexToKey), new HashSet<>());
+				
+		return cliques;
+	}
+	
+	// Helper methods for union/intersection/difference in Java
+	private Set<T> nonDestructiveUnion(Set<T> a, Set<T> b) {
+		Set<T> newA = new HashSet<>(a);
+		newA.addAll(b);
+		return newA;
+	}
+	
+	private Set<T> nonDestructiveIntersection(Set<T> a, Set<T> b) {
+		Set<T> newA = new HashSet<>(a);
+		newA.retainAll(b);
+		return newA;
+	}
+	
+	private Set<T> nonDestructiveDifference(Set<T> a, Set<T> b) {
+		Set<T> newA = new HashSet<>(a);
+		newA.removeAll(b);
+		return newA;
+	}
+	
+	private void extend(
+		ArrayList<Set<T>> maxCliques,
+		Set<T> verticesOfPartialClique, // compsub in the main paper, R in other papers which extend the algo, IDK why every one has diff notation
+		Set<T> candidates, // P in some papers, this is just the set of candidates we can expand into
+		Set<T> not // X in some papers which extend the algo
+	) {	
+		Set<T> candidatesOrNot = nonDestructiveUnion(candidates, not);
+		if(candidatesOrNot.size() == 0) {
+			// As per Bron-Kerbosch and Tomita, this condition means we cannot expand
+			// any further and so, we should add to our list of cliques
+			maxCliques.add(verticesOfPartialClique);
+			return;
+		}
+		
+		// Use Tomita's pivot heuristic to restrict the recursive calls 
+		// needed.
+		T pivot = null;
+		int maxPivot = -1;
+		for(T potPivot: candidatesOrNot) {
+			if(pivot == null) {
+				pivot = potPivot;
+				continue;
+			}
+			
+			Set<T> successorSet = this.successorSet(potPivot); // For an undirected graph, the successor set is the neighborhood
+			int PUN = nonDestructiveIntersection(candidates, successorSet).size(); // P intersection neighrhood
+			if (PUN > maxPivot) {
+				maxPivot = PUN;
+				pivot = potPivot;
+			}
+		}
+		
+		Set<T> verticesToIter = nonDestructiveDifference(candidates, this.successorSet(pivot));
+		for(T vertex: verticesToIter) {
+			Set<T> vertexSet = new HashSet<>(1);
+			vertexSet.add(vertex);
+			
+			Set<T> newVerticesOfPartialClique = this.nonDestructiveUnion(verticesOfPartialClique, vertexSet); // add vertex to partial clique 
+			Set<T> newCandidates = this.nonDestructiveIntersection(candidates, this.successorSet(vertex));
+			Set<T> newNot = this.nonDestructiveIntersection(not, this.successorSet(vertex));
+			this.extend(maxCliques, newVerticesOfPartialClique, newCandidates, newNot);
+			
+			// Add vertex to not and remove from candidates
+			candidates.removeAll(vertexSet);
+			not.addAll(vertexSet);
+		}
+	}
 }

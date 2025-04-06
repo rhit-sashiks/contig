@@ -94,7 +94,8 @@ public class MatrixReader {
 			e.printStackTrace();
 			return;
 		} 
-		
+
+		System.out.println("Max Cliques: " + G.maxCliques());
 		G.setIsComplement(true);
 		System.out.println("Transitive Orientation: " + G.transitiveOrientation());
 		

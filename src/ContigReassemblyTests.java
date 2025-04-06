@@ -440,7 +440,7 @@ public class ContigReassemblyTests {
 		// Now try deducing a transitive orientation for 'm'
 		ics = m.transitiveOrientation();
 		System.out.println("Transitive Orientation: " + ics);
-		
+		System.out.println("Max Cliques: " + m.maxCliques());
 		// Graph 2
 		Set<String> keySet2 = new HashSet<>();
 		keySet2.add("a");
@@ -469,9 +469,8 @@ public class ContigReassemblyTests {
 		System.out.println("Graph 2");
 		ics = m2.deduceImplicationClass(new AdjacencyMatrixGraph.Edge<>("a", "b"));
 		System.out.println(ics);
-		
-		ics = m2.transitiveOrientation();
-		System.out.println("Transitive Orientation: " + ics);
+
+		System.out.println("Max Cliques: " + m2.maxCliques());
 	}
 	
 
