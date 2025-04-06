@@ -12,12 +12,22 @@ public class AdjacencyMatrixGraph<T> {
 	Map<T,Integer> keyToIndex;
 	List<T> indexToKey;
 	int[][] matrix;
+	boolean isComplement;
+	
+	private int connectionExistsValue() {
+		return this.isComplement ? 0 : 1;
+	}
+	
+	private int connectionDoesNotExistsValue() {
+		return this.isComplement ? 1 : 0;
+	}
 	
 	AdjacencyMatrixGraph(Set<T> keys) {
 		int size = keys.size();
 		this.keyToIndex = new HashMap<T,Integer>();
 		this.indexToKey = new ArrayList<T>();
 		this.matrix = new int[size][size];
+		this.isComplement = false;
 		// need to populate keyToIndex and indexToKey with info from keys
 		int i = 0;
 		for(T key: keys) {
@@ -34,6 +44,24 @@ public class AdjacencyMatrixGraph<T> {
 		}
 	}
 	
+	AdjacencyMatrixGraph(Set<T> keys, int[][] matrix) {
+		this(keys);
+		this.matrix = matrix;
+		
+		if(keys.size() != matrix.length) {
+			throw new RuntimeException("keys and matrix have differing length");
+		}
+	}
+	
+	public boolean isComplement() {
+		return this.isComplement;
+	}
+	
+	/* Re-interpret the graph as being its complement */
+	public void setIsComplement(boolean isComplement) {
+		this.isComplement = true;
+	}
+	
 	public int size() {
 		// TODO Auto-generated method stub
 		return this.indexToKey.size();
@@ -44,7 +72,7 @@ public class AdjacencyMatrixGraph<T> {
 		int numEdges = 0;
 		for(int i = 0; i < this.size(); i++) {
 			for(int j = 0; j < this.size(); j++) {
-				if(this.matrix[i][j] == 1) {
+				if(this.matrix[i][j] == this.connectionExistsValue()) {
 					numEdges++;
 				}
 			}
@@ -62,10 +90,10 @@ public class AdjacencyMatrixGraph<T> {
 		if(toInt == null) {
 			throw new NoSuchElementException();
 		}
-		if(this.matrix[fromInt][toInt] == 1) {
+		if(this.matrix[fromInt][toInt] == this.connectionExistsValue()) {
 			return false;
 		}
-		this.matrix[fromInt][toInt] = 1;
+		this.matrix[fromInt][toInt] = this.connectionExistsValue();
 		return true;
 	}
 	
@@ -78,11 +106,11 @@ public class AdjacencyMatrixGraph<T> {
 		if(toInt == null) {
 			throw new NoSuchElementException();
 		}
-		if(this.matrix[fromInt][toInt] == 1 && this.matrix[toInt][fromInt] == 1) {
+		if(this.matrix[fromInt][toInt] == this.connectionExistsValue() && this.matrix[toInt][fromInt] == this.connectionExistsValue()) {
 			return false;
 		}
-		this.matrix[fromInt][toInt] = 1;
-		this.matrix[toInt][fromInt] = 1;
+		this.matrix[fromInt][toInt] = this.connectionExistsValue();
+		this.matrix[toInt][fromInt] = this.connectionExistsValue();
 		return true;
 	}
 
@@ -105,7 +133,7 @@ public class AdjacencyMatrixGraph<T> {
 		if(toInt == null) {
 			throw new NoSuchElementException();
 		}
-		return this.matrix[fromInt][toInt] == 1;
+		return this.matrix[fromInt][toInt] == this.connectionExistsValue();
 	}
 
 	public boolean removeEdge(T from, T to) throws NoSuchElementException {
@@ -118,10 +146,10 @@ public class AdjacencyMatrixGraph<T> {
 		if(toInt == null) {
 			throw new NoSuchElementException();
 		}
-		if(this.matrix[fromInt][toInt] == 0) {
+		if(this.matrix[fromInt][toInt] == this.connectionDoesNotExistsValue()) {
 			return false;
 		}
-		this.matrix[fromInt][toInt] = 0;
+		this.matrix[fromInt][toInt] = this.connectionDoesNotExistsValue();
 		return true;
 	}
 
@@ -133,7 +161,7 @@ public class AdjacencyMatrixGraph<T> {
 		}
 		int outDegrees = 0;
 		for(int i = 0; i < this.matrix.length; i++) {
-			if(this.matrix[keyInt][i] == 1) {
+			if(this.matrix[keyInt][i] == this.connectionExistsValue()) {
 				outDegrees++;
 			}
 		}
@@ -148,7 +176,7 @@ public class AdjacencyMatrixGraph<T> {
 		}
 		int inDegrees = 0;
 		for(int i = 0; i < this.matrix.length; i++) {
-			if(this.matrix[i][keyInt] == 1) {
+			if(this.matrix[i][keyInt] == this.connectionExistsValue()) {
 				inDegrees++;
 			}
 		}
@@ -169,7 +197,7 @@ public class AdjacencyMatrixGraph<T> {
 				
 		Set<T> successors = new HashSet<T>();
 		for(int i = 0; i < this.matrix.length; i++) {
-			if(this.matrix[keyInt][i] == 1) {
+			if(this.matrix[keyInt][i] == this.connectionExistsValue()) {
 				successors.add(this.indexToKey.get(i));
 			}
 		}
@@ -186,7 +214,7 @@ public class AdjacencyMatrixGraph<T> {
 				
 		Set<T> predecessors = new HashSet<T>();
 		for(int i = 0; i < this.matrix.length; i++) {
-			if(this.matrix[i][keyInt] == 1) {
+			if(this.matrix[i][keyInt] == this.connectionExistsValue()) {
 				predecessors.add(this.indexToKey.get(i));
 			}
 		}
@@ -221,7 +249,7 @@ public class AdjacencyMatrixGraph<T> {
 		public boolean hasNext() {
 			// TODO Auto-generated method stub
 			while(this.i < this.matrix.length) {
-				if(this.matrix[this.keyInt][this.i] == 1) {
+				if(this.matrix[this.keyInt][this.i] == connectionExistsValue()) {
 					return true;
 				}
 				this.i++;
@@ -235,7 +263,7 @@ public class AdjacencyMatrixGraph<T> {
 			
 			// Find next one
 			while(this.i < this.matrix.length) {
-				if(this.matrix[this.keyInt][this.i] == 1) {
+				if(this.matrix[this.keyInt][this.i] == connectionExistsValue()) {
 					int j = this.i;
 					this.i++;
 					return this.indexToKey.get(j);
@@ -273,7 +301,7 @@ public class AdjacencyMatrixGraph<T> {
 		public boolean hasNext() {
 			// TODO Auto-generated method stub
 			while(this.i < this.matrix.length) {
-				if(this.matrix[this.i][this.keyInt] == 1) {
+				if(this.matrix[this.i][this.keyInt] == connectionExistsValue()) {
 					return true;
 				}
 				this.i++;
@@ -287,7 +315,7 @@ public class AdjacencyMatrixGraph<T> {
 			
 			// Find next one
 			while(this.i < this.matrix.length) {
-				if(this.matrix[this.i][this.keyInt] == 1) {
+				if(this.matrix[this.i][this.keyInt] == connectionExistsValue()) {
 					int j = this.i;
 					this.i++;
 					return this.indexToKey.get(j);
@@ -435,7 +463,7 @@ public class AdjacencyMatrixGraph<T> {
 		for(int i = 0; i < this.size(); i++) {			
 			T a = this.indexToKey.get(i);
 			for(int j = 0; j < this.size(); j++) {				
-				if(this.matrix[i][j] == 1) {
+				if(this.matrix[i][j] == this.connectionExistsValue()) {
 					T b = this.indexToKey.get(j);
 					
 					if(a.equals(b)) {
