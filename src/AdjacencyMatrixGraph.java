@@ -567,4 +567,6 @@ public class AdjacencyMatrixGraph<T> {
 			}
 		}
 	}
+	
+	// Tries to find the max cliques of a graph
 }
