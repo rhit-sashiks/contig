@@ -27,6 +27,13 @@ public class AdjacencyMatrixGraph<T> {
 		}
 	}
 	
+	AdjacencyMatrixGraph(Set<T> keys, Set<Edge<T>> edgeSet) {
+		this(keys);
+		for(Edge<T> edge: edgeSet) {
+			this.addEdge(edge.a, edge.b);
+		}
+	}
+	
 	public int size() {
 		// TODO Auto-generated method stub
 		return this.indexToKey.size();
@@ -79,6 +86,10 @@ public class AdjacencyMatrixGraph<T> {
 		return true;
 	}
 
+	public Set<T> vertices() {
+		return this.keyToIndex.keySet();
+	}
+	
 	public boolean hasVertex(T key) {
 		// TODO Auto-generated method stub
 		return this.keyToIndex.containsKey(key);
@@ -298,6 +309,10 @@ public class AdjacencyMatrixGraph<T> {
 			this.b = b;
 		}
 		
+		public Edge<T> reverse() {
+			return new Edge<T>(this.b, this.a);
+		}
+		
 		@Override
 		public String toString() {
 			return "" + this.a + this.b;
@@ -308,9 +323,10 @@ public class AdjacencyMatrixGraph<T> {
 		public boolean equals(Object other) {
 			if(other instanceof Edge) {
 				Edge<T> otherEdge = (Edge<T>)other;
-				return this.a == otherEdge.a && this.b == otherEdge.b;
+				boolean isEqual = this.a.equals(otherEdge.a) && this.b.equals(otherEdge.b);
+				return isEqual;
 			}
-						
+			
 			return false;
 		}
 		
@@ -320,9 +336,122 @@ public class AdjacencyMatrixGraph<T> {
 		}
 	}
 		
+	public static class EdgeSet<T> {
+		public Set<Edge<T>> edges;
+		
+		public EdgeSet(Set<Edge<T>> edges) {
+			this.edges = edges;
+		}
+		
+		@Override
+		public String toString() {
+			return this.edges.toString();
+		}
+		
+		// CITATION: https://stackoverflow.com/questions/51113134/union-or-intersection-of-java-sets
+		// for how to do this non-destructively
+		/**
+		 Takes the union of two set of edges
+		*/
+		public EdgeSet<T> union(Set<Edge<T>> edges) {
+			Set<Edge<T>> newSet = new HashSet<>(this.edges);
+			newSet.addAll(edges);
+			return new EdgeSet<T>(newSet);
+		}
+		
+		public EdgeSet<T> union(EdgeSet<T> edges) {
+			return this.union(edges.edges);
+		}
+		
+		/**
+		 Takes the intersection of two sets of edges
+		*/
+		public EdgeSet<T> intersection(Set<Edge<T>> edges) {
+			Set<Edge<T>> newSet = new HashSet<>(this.edges);
+			newSet.retainAll(edges);
+			return new EdgeSet<T>(newSet);
+		}
+		
+		public EdgeSet<T> intersection(EdgeSet<T> edges) {
+			return this.intersection(edges.edges);
+		}
+		
+		/**
+		 * Takes the difference of two sets of edges
+		 */
+		public EdgeSet<T> difference(Set<Edge<T>> edges) {
+			Set<Edge<T>> newSet = new HashSet<>(this.edges);
+			newSet.removeAll(edges);
+			return new EdgeSet<T>(newSet);
+		}
+		
+		public EdgeSet<T> difference(EdgeSet<T> edges) {
+			return this.difference(edges.edges);
+		}
+		
+		/**
+		 * 'Flip'/'Invert' (?) / A^-1 of a edge set
+		 */
+		public EdgeSet<T> flipped() {
+			Set<Edge<T>> newSet = new HashSet<>(this.edges.size());
+			for(Edge<T> edge: this.edges) {
+				newSet.add(edge.reverse());
+			}
+			return new EdgeSet<T>(newSet);
+		}
+		
+		/**
+		 * Returns the symmetric closure of the edge set (A-hat) which
+		 * is union(A, A^-1)
+		 */
+		public EdgeSet<T> symmetricClosure() {
+			return this.union(this.flipped());
+		}
+		
+		/**
+		 * Returns an arbitrary edge in the EdgeSet
+		 */
+		public Edge<T> arbitraryEdge() {
+			if(this.edges.size() == 0) {
+				throw new NoSuchElementException("No elements in edgeset to pick arbitary edge from");
+			}
+			
+			Edge<T> e = null;
+			for(Edge<T> edge: this.edges) {
+				e = edge;
+				break;
+			}
+			
+			return e;
+		}
+	}
+	
+	/**
+	 * Returns an edgeSet containing every edge in the graph
+	 */
+	public EdgeSet<T> edgeSet() {
+		// TODO Auto-generated method stub
+		Set<Edge<T>> edges = new HashSet<>();
+		for(int i = 0; i < this.size(); i++) {			
+			T a = this.indexToKey.get(i);
+			for(int j = 0; j < this.size(); j++) {				
+				if(this.matrix[i][j] == 1) {
+					T b = this.indexToKey.get(j);
+					
+					if(a.equals(b)) {
+						continue;
+					}
+					
+					edges.add(new Edge<T>(a, b));
+				}
+			}
+		}
+		return new EdgeSet<T>(edges);
+	}
+	
 	// Returns what edges ab forces
 	// an edge ab forces a'b' iff a = a' and bb' not in E *or* b = b' and aa' not in E 
-	public Set<Edge<T>> forces(Edge<T> edge) {
+	public EdgeSet<T> forces(Edge<T> edge) {
 		// a = a' case
 		Set<Edge<T>> forcedEdges = new HashSet<Edge<T>>();
 		for(T neighboringVertex: this.successorSet(edge.a)) {
@@ -352,7 +481,7 @@ public class AdjacencyMatrixGraph<T> {
 			}
 		}
 		
-		return forcedEdges;
+		return new EdgeSet<T>(forcedEdges);
 	}
 	
 	private boolean edgeForces(Edge<T> e1, Edge<T> e2) {
@@ -360,7 +489,7 @@ public class AdjacencyMatrixGraph<T> {
 	}
 	
 	// Deduce the reflexive, transitive closure about an edge E
-	public Set<Edge<T>> deduceImplicationClass(Edge<T> edge) {
+	public EdgeSet<T> deduceImplicationClass(Edge<T> edge) {
 		Set<Edge<T>> edges = new HashSet<>();
 		
 		ArrayDeque<Edge<T>> edgeSearchSet = new ArrayDeque<>();
@@ -374,11 +503,40 @@ public class AdjacencyMatrixGraph<T> {
 			
 			edges.add(nextEdge);
 			
-			for(Edge<T> forcedEdge: this.forces(nextEdge)) {
+			for(Edge<T> forcedEdge: this.forces(nextEdge).edges) {
 				edgeSearchSet.add(forcedEdge); // Push to edgeSearchSet
 			}
 		}
 		
-		return edges;
+		return new EdgeSet<T>(edges);
+	}
+		
+	// Deduces a potential transitive orientation to the given graph
+	public EdgeSet<T> transitiveOrientation() {
+		// TODO: maybe optimize this slightly
+		EdgeSet<T> currentEdges = this.edgeSet();
+		EdgeSet<T> orientation = new EdgeSet<>(new HashSet<>()); 
+		while(true) {
+			// 1. Arbitrarily pick an edge
+			System.out.println("Edges: " + currentEdges);
+			Edge<T> edge = currentEdges.arbitraryEdge();
+			EdgeSet<T> implicationClass = this.deduceImplicationClass(edge); // B
+			EdgeSet<T> implicationClassFlipped = implicationClass.flipped(); // B^-1
+			System.out.println("Implication Classes About This Edge: " + implicationClass + " " + implicationClassFlipped + " " +implicationClass.intersection(implicationClassFlipped));
+						
+			// If B intersection B^-1 == null set
+			if(implicationClass.intersection(implicationClassFlipped).edges.size() == 0) {
+				orientation = orientation.union(implicationClass); // Add Bi to F
+			} else {
+				System.out.println("ERROR: " + implicationClass.intersection(implicationClassFlipped));
+				throw new Error("Graph is not a valid transitively orientable graph");
+			}
+			
+			currentEdges = currentEdges.difference(implicationClass.symmetricClosure());
+			
+			if(currentEdges.edges.size() == 0) {
+				return orientation; // Return the orientation now that we're done here
+			}
+		}
 	}
 }

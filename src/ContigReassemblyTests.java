@@ -418,24 +418,28 @@ public class ContigReassemblyTests {
 		// b
 		m.addUniEdge("b", "e");
 		
-		Set<AdjacencyMatrixGraph.Edge<String>> s = m.forces(new AdjacencyMatrixGraph.Edge<>("a", "c"));
-		assertEquals(1, s.size());
-		for(AdjacencyMatrixGraph.Edge<String> es: s) {
+		AdjacencyMatrixGraph.EdgeSet<String> s = m.forces(new AdjacencyMatrixGraph.Edge<>("a", "c"));
+		assertEquals(1, s.edges.size());
+		for(AdjacencyMatrixGraph.Edge<String> es: s.edges) {
 			assertEquals("ae", es.toString());
 		}
 		
-		Set<AdjacencyMatrixGraph.Edge<String>> ics = m.deduceImplicationClass(new AdjacencyMatrixGraph.Edge<>("a", "b"));
-		System.out.println(ics);
+		AdjacencyMatrixGraph.EdgeSet<String> ics = m.deduceImplicationClass(new AdjacencyMatrixGraph.Edge<>("a", "b"));
+		System.out.println(ics + " " + ics.flipped());
 		ics = m.deduceImplicationClass(new AdjacencyMatrixGraph.Edge<>("c", "d"));
 		System.out.println(ics);
 		ics = m.deduceImplicationClass(new AdjacencyMatrixGraph.Edge<>("a", "c"));
-		System.out.println(ics);
+		System.out.println(ics + " " + ics.flipped());
 		ics = m.deduceImplicationClass(new AdjacencyMatrixGraph.Edge<>("b", "c"));
 		System.out.println(ics);
 		ics = m.deduceImplicationClass(new AdjacencyMatrixGraph.Edge<>("c", "b"));
 		System.out.println(ics);
 		ics = m.deduceImplicationClass(new AdjacencyMatrixGraph.Edge<>("b", "a"));
 		System.out.println(ics);
+		
+		// Now try deducing a transitive orientation for 'm'
+		ics = m.transitiveOrientation();
+		System.out.println("Transitive Orientation: " + ics);
 		
 		// Graph 2
 		Set<String> keySet2 = new HashSet<>();
@@ -465,6 +469,9 @@ public class ContigReassemblyTests {
 		System.out.println("Graph 2");
 		ics = m2.deduceImplicationClass(new AdjacencyMatrixGraph.Edge<>("a", "b"));
 		System.out.println(ics);
+		
+		ics = m2.transitiveOrientation();
+		System.out.println("Transitive Orientation: " + ics);
 	}
 	
 
