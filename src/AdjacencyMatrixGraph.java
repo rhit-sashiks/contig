@@ -678,10 +678,13 @@ public class AdjacencyMatrixGraph<T> {
 	// NP complete. As the transitive orientation itself is acyclic,
 	// any subgraph of the TO is also acyclic
 	//
-	// CITATION: https://dl.acm.org/doi/pdf/10.1145/368996.369025 and 
-	// https://www.youtube.com/watch?v=eL-KzMXSXXI&t=1s, 
-	// https://www.youtube.com/watch?v=3ecpor13uAY (I know its a Youtube video,
+	// CITATION FOR TOPOLOGICAL ORDER: https://dl.acm.org/doi/pdf/10.1145/368996.369025 and 
+	// https://www.youtube.com/watch?v=eL-KzMXSXXI&t=1s (I know its a Youtube video,
 	// but its the best description of the algorithm I've found so far)
+	//
+	// Once a topological order has been found, the edges form a Hamiltonian 
+	// path (if it exists, this order will also be unique), 
+	// see https://en.wikipedia.org/wiki/Topological_sorting#Uniqueness
 	public ArrayList<T> hamiltonianPathAcyclic() {
 		ArrayList<T> topOrder = this.topologicalOrder();
 		for(int i = 0; i < topOrder.size(); i++) {
