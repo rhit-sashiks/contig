@@ -471,6 +471,24 @@ public class ContigReassemblyTests {
 		System.out.println(ics);
 
 		System.out.println("Max Cliques: " + m2.maxCliques());
+		
+		Set<String> keySet3 = new HashSet<>();
+		keySet3.add("a");
+		keySet3.add("c");
+		keySet3.add("e");
+		keySet3.add("g");
+		
+		AdjacencyMatrixGraph<String> m3 = new AdjacencyMatrixGraph<>(keySet3);
+		m3.addEdge("a", "g");
+		m3.addEdge("a", "c");
+		m3.addEdge("c", "g");
+		m3.addEdge("e", "c");
+		m3.addEdge("e", "g");
+		m3.addEdge("e", "a");
+		
+		// SMTH like Topological ordering: [e, a, b, c, d, f]
+		System.out.println("Hamiltonian path: " + m3.hamiltonianPathAcyclic());
+
 	}
 	
 

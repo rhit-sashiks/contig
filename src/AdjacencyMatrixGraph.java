@@ -567,20 +567,11 @@ public class AdjacencyMatrixGraph<T> {
 			}
 		}
 	}
-	
+		
 	// WEB CITATION: https://dl.acm.org/doi/pdf/10.1145/362342.362367 and https://dl.acm.org/doi/pdf/10.1145/321694.321698
 	// and https://pure.tue.nl/ws/files/2360457/54264.pdf and https://arxiv.org/pdf/1103.0318
-	// Max cliques of a graph
-	//
-	// Basic idea of the algo is simple in concept:
-	// compsub is the set that will be
-	// extended or shrunk by new points while
-	// going through the graph and backtracking
-	//
-	// EXT OPTIMIZATION: The candidates to add as well as the 
-	// candidates already tried as an extension
-	// can be placed in one big array
-	// with 0 to ne (end of not) and ce (end of candidates) 
+	// 
+	// Returns the Max cliques of a graph
 	//
 	// As maximum cliques (and Hamiltonian path) is the main NP complete bit
 	// of contig reassembly, it is the bit which needs
@@ -594,7 +585,7 @@ public class AdjacencyMatrixGraph<T> {
 		}
 		
 		for(int i = 0; i < this.matrix.length; i++) {
-			this.matrix[i][i] = 0;
+			this.matrix[i][i] = this.connectionDoesNotExistsValue();
 		}
 				
 		ArrayList<Set<T>> cliques = new ArrayList<>(); 
@@ -632,13 +623,15 @@ public class AdjacencyMatrixGraph<T> {
 		Set<T> candidatesOrNot = nonDestructiveUnion(candidates, not);
 		if(candidatesOrNot.size() == 0) {
 			// As per Bron-Kerbosch and Tomita, this condition means we cannot expand
-			// any further and so, we should add to our list of cliques
+			// our candidates any further and so, we should add it to our list of cliques
 			maxCliques.add(verticesOfPartialClique);
 			return;
 		}
 		
 		// Use Tomita's pivot heuristic to restrict the recursive calls 
 		// needed.
+		//
+		// Note: A standard Bron-Kerbosch does not implement this
 		T pivot = null;
 		int maxPivot = -1;
 		for(T potPivot: candidatesOrNot) {
@@ -648,20 +641,26 @@ public class AdjacencyMatrixGraph<T> {
 			}
 			
 			Set<T> successorSet = this.successorSet(potPivot); // For an undirected graph, the successor set is the neighborhood
-			int PUN = nonDestructiveIntersection(candidates, successorSet).size(); // P intersection neighrhood
+			int PUN = nonDestructiveIntersection(candidates, successorSet).size(); // P intersection neighourhood is the heuristic used by Tomita
 			if (PUN > maxPivot) {
 				maxPivot = PUN;
 				pivot = potPivot;
 			}
 		}
 		
+		// Standard Bron-Kerbosch would not do the below line and would jump straight to the
+		// backtracking loop bit
 		Set<T> verticesToIter = nonDestructiveDifference(candidates, this.successorSet(pivot));
 		for(T vertex: verticesToIter) {
+			// A set containing just one element: the vertex in question
+			//
+			// This allows for set operations to efficiently work using standard
+			// functions
 			Set<T> vertexSet = new HashSet<>(1);
 			vertexSet.add(vertex);
 			
 			Set<T> newVerticesOfPartialClique = this.nonDestructiveUnion(verticesOfPartialClique, vertexSet); // add vertex to partial clique 
-			Set<T> newCandidates = this.nonDestructiveIntersection(candidates, this.successorSet(vertex));
+			Set<T> newCandidates = this.nonDestructiveIntersection(candidates, this.successorSet(vertex)); 
 			Set<T> newNot = this.nonDestructiveIntersection(not, this.successorSet(vertex));
 			this.extend(maxCliques, newVerticesOfPartialClique, newCandidates, newNot);
 			
@@ -669,5 +668,85 @@ public class AdjacencyMatrixGraph<T> {
 			candidates.removeAll(vertexSet);
 			not.addAll(vertexSet);
 		}
+	}
+	
+	// Returns a hamiltonian path within the graph
+	// assuming the graph is acyclic
+	//
+	// Found out through a cursory search on wikipedia that
+	// hamiltonian path/largest path on a DAG is 'linear' and not
+	// NP complete. As the transitive orientation itself is acyclic,
+	// any subgraph of the TO is also acyclic
+	//
+	// CITATION: https://dl.acm.org/doi/pdf/10.1145/368996.369025 and 
+	// https://www.youtube.com/watch?v=eL-KzMXSXXI&t=1s, 
+	// https://www.youtube.com/watch?v=3ecpor13uAY (I know its a Youtube video,
+	// but its the best description of the algorithm I've found so far)
+	public ArrayList<T> hamiltonianPathAcyclic() {
+		ArrayList<T> topOrder = this.topologicalOrder();
+		for(int i = 0; i < topOrder.size(); i++) {
+			if(i >= topOrder.size() - 1) {
+				break;
+			}
+			
+			if(!this.hasEdge(topOrder.get(i), topOrder.get(i+1))) {
+				throw new RuntimeException("No hamiltonian path found. Is the graph a DAG?");
+			}
+		}
+		
+		return topOrder;
+	}
+	
+	class TopOrderDFSData {
+		T element;
+		int tag;
+		
+		TopOrderDFSData(T element, int tag) {
+			this.element = element;
+			this.tag = tag;
+		}
+	}
+	
+	// Returns the topological ordering of a graph
+	ArrayList<T> topologicalOrder() {
+		ArrayList<T> topOrder = new ArrayList<T>(this.indexToKey.size());
+		// Fill array with null initially
+		for(int i = 0; i < this.indexToKey.size(); i++) {
+			topOrder.add(null);
+		}
+		int currentIdx = topOrder.size() - 1; // Start from back of array, and keep adding new elements from back to front
+		HashSet<T> visited = new HashSet<T>();
+		for(T vertex: this.indexToKey) {
+			if(visited.contains(vertex)) {
+				continue; // We've already seen this vertex
+			}
+			
+			// DFS
+			ArrayDeque<TopOrderDFSData> elements = new ArrayDeque<>();
+			elements.add(new TopOrderDFSData(vertex, 0));
+			
+			while(!elements.isEmpty()) {
+				TopOrderDFSData el = elements.pop();
+				if(el.tag == 0) {
+					if(visited.contains(el.element)) {
+						throw new RuntimeException("Internal error: visited node multiple times during iteration. Is the graph a DAG?");
+					}
+					visited.add(el.element);
+					elements.push(new TopOrderDFSData(el.element, 1));
+					for(T neighbor: this.successorSet(el.element)) {
+						if(visited.contains(neighbor)) {
+							continue;
+						}
+						elements.push(new TopOrderDFSData(neighbor, 0));
+					}
+				} else {
+					System.out.println("Adding " + el.element);
+					topOrder.set(currentIdx, el.element);
+					currentIdx--;
+				}
+			}
+		}
+		
+		return topOrder;
 	}
 }
