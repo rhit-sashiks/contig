@@ -729,7 +729,7 @@ public class AdjacencyMatrixGraph<T> {
 				TopOrderDFSData el = elements.pop();
 				if(el.tag == 0) {
 					if(visited.contains(el.element)) {
-						throw new RuntimeException("Internal error: visited node multiple times during iteration. Is the graph a DAG?");
+						continue;
 					}
 					visited.add(el.element);
 					elements.push(new TopOrderDFSData(el.element, 1));

@@ -486,9 +486,20 @@ public class ContigReassemblyTests {
 		m3.addEdge("e", "g");
 		m3.addEdge("e", "a");
 		
-		// SMTH like Topological ordering: [e, a, b, c, d, f]
+		// SMTH like EACG
 		System.out.println("Hamiltonian path: " + m3.hamiltonianPathAcyclic());
 
+		Set<String> keySet4 = new HashSet<>();
+		keySet4.add("1");
+		keySet4.add("2");
+		keySet4.add("3");
+		
+		AdjacencyMatrixGraph<String> m4 = new AdjacencyMatrixGraph<>(keySet4);
+		m4.addEdge("1", "3");
+		m4.addEdge("1", "2");
+		m4.addEdge("3", "2");
+		
+		System.out.println("Hamiltonian path: " + m4.hamiltonianPathAcyclic());
 	}
 	
 
