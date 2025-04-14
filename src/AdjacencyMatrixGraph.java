@@ -1,5 +1,6 @@
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -23,6 +24,10 @@ public class AdjacencyMatrixGraph<T> {
 	}
 	
 	AdjacencyMatrixGraph(Set<T> keys) {
+		this.init(keys);
+	}
+	
+	private void init(Set<T> keys) {
 		int size = keys.size();
 		this.keyToIndex = new HashMap<T,Integer>();
 		this.indexToKey = new ArrayList<T>();
@@ -51,6 +56,28 @@ public class AdjacencyMatrixGraph<T> {
 		if(keys.size() != matrix.length) {
 			throw new RuntimeException("keys and matrix have differing length");
 		}
+	}
+	
+	AdjacencyMatrixGraph(EdgeSet<T> edgeSet) {
+		Set<T> keys = new HashSet<>();
+		for(Edge<T> edge: edgeSet.edges) {
+			if(!keys.contains(edge.a)) {
+				keys.add(edge.a);
+			} else if(!keys.contains(edge.b)) {
+				keys.add(edge.b);
+			}
+		}
+		
+		this.init(keys);
+		
+		for(Edge<T> edge: edgeSet.edges) {
+			this.addEdge(edge.a, edge.b);
+		}
+	}
+	
+	@Override
+	public String toString() {
+		return "Graph<" + this.edgeSet().toString() + ">";
 	}
 	
 	public boolean isComplement() {
@@ -367,7 +394,37 @@ public class AdjacencyMatrixGraph<T> {
 	public static class EdgeSet<T> {
 		public Set<Edge<T>> edges;
 		
+		public EdgeSet() {
+			this.edges = new HashSet<Edge<T>>();
+		}
+		
 		public EdgeSet(Set<Edge<T>> edges) {
+			this.edges = edges;
+		}
+		
+		public AdjacencyMatrixGraph<T> extractSubgraph(Collection<T> vertices) {
+			HashSet<T> keySet = new HashSet<>(vertices);
+			AdjacencyMatrixGraph<T> graph = new AdjacencyMatrixGraph<>(keySet);
+			
+			for(Edge<T> edge: this.edges) {
+				if(keySet.contains(edge.a) && keySet.contains(edge.b)) {
+					graph.addEdge(edge.a, edge.b);
+				}
+			}
+			
+			return graph;
+		}
+		
+		public EdgeSet(List<T> vertices) {
+			Set<Edge<T>> edges = new HashSet<>(); 
+			for(int i = 0; i < vertices.size(); i++) {
+				if(i >= vertices.size() - 1) {
+					break;
+				}
+				
+				edges.add(new Edge<>(vertices.get(i), vertices.get(i+1)));
+			}
+			
 			this.edges = edges;
 		}
 		
@@ -532,6 +589,9 @@ public class AdjacencyMatrixGraph<T> {
 			edges.add(nextEdge);
 			
 			for(Edge<T> forcedEdge: this.forces(nextEdge).edges) {
+				if(forcedEdge.a.equals(forcedEdge.b)) {
+					continue;
+				}
 				edgeSearchSet.add(forcedEdge); // Push to edgeSearchSet
 			}
 		}
@@ -546,18 +606,18 @@ public class AdjacencyMatrixGraph<T> {
 		EdgeSet<T> orientation = new EdgeSet<>(new HashSet<>()); 
 		while(true) {
 			// 1. Arbitrarily pick an edge
-			System.out.println("Edges: " + currentEdges);
+			System.out.println("[TO] Current Edge Set: " + currentEdges);
 			Edge<T> edge = currentEdges.arbitraryEdge();
 			EdgeSet<T> implicationClass = this.deduceImplicationClass(edge); // B
 			EdgeSet<T> implicationClassFlipped = implicationClass.flipped(); // B^-1
-			System.out.println("Implication Classes About This Edge: " + implicationClass + " " + implicationClassFlipped + " " +implicationClass.intersection(implicationClassFlipped));
+			System.out.println("[TO] Implication Classes About This Edge: " + implicationClass + " " + implicationClassFlipped + " " +implicationClass.intersection(implicationClassFlipped));
 						
 			// If B intersection B^-1 == null set
 			if(implicationClass.intersection(implicationClassFlipped).edges.size() == 0) {
 				orientation = orientation.union(implicationClass); // Add Bi to F
 			} else {
-				System.out.println("ERROR: " + implicationClass.intersection(implicationClassFlipped));
-				throw new Error("Graph is not a valid transitively orientable graph");
+				System.out.println("[TO] Implication Classes ERROR: " + implicationClass.intersection(implicationClassFlipped));
+				throw new Error("[TO] Graph is not a valid transitively orientable graph");
 			}
 			
 			currentEdges = currentEdges.difference(implicationClass.symmetricClosure());
@@ -743,7 +803,7 @@ public class AdjacencyMatrixGraph<T> {
 						elements.push(new TopOrderDFSData(neighbor, 0));
 					}
 				} else {
-					System.out.println("Adding " + el.element);
+					//System.out.println("Adding " + el.element);
 					topOrder.set(currentIdx, el.element);
 					currentIdx--;
 				}
@@ -751,5 +811,23 @@ public class AdjacencyMatrixGraph<T> {
 		}
 		
 		return topOrder;
+	}
+	
+	// Extracts out a subgraph containing just the desired vertices
+	// and connections between them
+	public AdjacencyMatrixGraph<T> extractSubgraph(List<T> vertices) {
+		HashSet<T> keySet = new HashSet<>(vertices);
+		AdjacencyMatrixGraph<T> graph = new AdjacencyMatrixGraph<>(keySet);
+		
+		for(T vertex: vertices) {
+			for(T connection: this.successorSet(vertex)) {
+				if(!keySet.contains(connection)) {
+					continue;
+				}
+				graph.addEdge(vertex, connection);
+			}
+		}
+		
+		return graph;
 	}
 }

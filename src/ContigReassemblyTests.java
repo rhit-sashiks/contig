@@ -3,8 +3,10 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
@@ -487,7 +489,9 @@ public class ContigReassemblyTests {
 		m3.addEdge("e", "a");
 		
 		// SMTH like EACG
-		System.out.println("Hamiltonian path: " + m3.hamiltonianPathAcyclic());
+		List<String> hpath = m3.hamiltonianPathAcyclic();
+ 		System.out.println("Hamiltonian path: " + hpath);
+ 		System.out.println("Extracted out path: " + m3.extractSubgraph(hpath));
 
 		Set<String> keySet4 = new HashSet<>();
 		keySet4.add("1");
@@ -502,6 +506,32 @@ public class ContigReassemblyTests {
 		System.out.println("Hamiltonian path: " + m4.hamiltonianPathAcyclic());
 	}
 	
+	@Test
+	public void testIntervalPath() {
+		ArrayList<Integer> a = new ArrayList<>();
+		a.add(0);
+		a.add(1);
+		assertEquals("[0, 1]", IntervalPath.Interval.getInsertionSpots(a).toString());
+		assertEquals("[0->1]", IntervalPath.Interval.getInterval(a).toString());
+		a.add(2);
+		assertEquals("[0, 2]", IntervalPath.Interval.getInsertionSpots(a).toString());
+		assertEquals("[0->2]", IntervalPath.Interval.getInterval(a).toString());
+		a.add(4);
+		a.add(5);
+		assertEquals("[0, 2, 4, 5]", IntervalPath.Interval.getInsertionSpots(a).toString());
+		assertEquals("[0->2, 4->5]", IntervalPath.Interval.getInterval(a).toString());
+		a.add(9);
+		a.add(10);
+		a.add(11);
+		assertEquals("[0, 2, 4, 5, 9, 11]", IntervalPath.Interval.getInsertionSpots(a).toString());
+		assertEquals("[0->2, 4->5, 9->11]", IntervalPath.Interval.getInterval(a).toString());
+
+		ArrayList<Integer> b = new ArrayList<>();
+		b.add(2);
+		b.add(3);
+		b.add(4);
+		assertEquals("[2, 4]", IntervalPath.Interval.getInsertionSpots(b).toString());
+	}
 
 	@AfterAll
 	public static void printSummary() {
