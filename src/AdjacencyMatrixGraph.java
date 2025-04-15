@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.TreeSet;
 
 public class AdjacencyMatrixGraph<T> {
 	Map<T,Integer> keyToIndex;
@@ -59,7 +60,7 @@ public class AdjacencyMatrixGraph<T> {
 	}
 	
 	AdjacencyMatrixGraph(EdgeSet<T> edgeSet) {
-		Set<T> keys = new HashSet<>();
+		Set<T> keys = new TreeSet<>();
 		for(Edge<T> edge: edgeSet.edges) {
 			if(!keys.contains(edge.a)) {
 				keys.add(edge.a);
@@ -78,6 +79,24 @@ public class AdjacencyMatrixGraph<T> {
 	@Override
 	public String toString() {
 		return "Graph<" + this.edgeSet().toString() + ">";
+	}
+	
+	// Returns the adjacency matrix repr of the graph
+	public String adjacencyMatrix() {
+		StringBuilder adjMatrix = new StringBuilder();
+		for(int i = 0; i < this.matrix.length; i++) {
+			for(int j = 0; j < this.matrix[i].length; j++) {
+				if(this.matrix[i][j] == this.connectionExistsValue()) {
+					adjMatrix.append(1);
+				} else {
+					adjMatrix.append(0);
+				}
+				adjMatrix.append(' ');
+			}
+			adjMatrix.append('\n');
+		}
+		
+		return adjMatrix.toString();
 	}
 	
 	public boolean isComplement() {
@@ -223,9 +242,13 @@ public class AdjacencyMatrixGraph<T> {
 		}
 				
 		Set<T> successors = new HashSet<T>();
-		for(int i = 0; i < this.matrix.length; i++) {
+		for(int i = 0; i < this.matrix.length; i++) {			
 			if(this.matrix[keyInt][i] == this.connectionExistsValue()) {
-				successors.add(this.indexToKey.get(i));
+				T successor = this.indexToKey.get(i);
+				if(key.equals(successor)) {
+					continue; // The successor should not include the key itself
+				}
+				successors.add(successor);
 			}
 		}
 
@@ -643,11 +666,7 @@ public class AdjacencyMatrixGraph<T> {
 		if(this.indexToKey.isEmpty()) {
 			return new ArrayList<>();
 		}
-		
-		for(int i = 0; i < this.matrix.length; i++) {
-			this.matrix[i][i] = this.connectionDoesNotExistsValue();
-		}
-				
+						
 		ArrayList<Set<T>> cliques = new ArrayList<>(); 
 		
 		this.extend(cliques, new HashSet<>(), new HashSet<>(this.indexToKey), new HashSet<>());
@@ -688,6 +707,8 @@ public class AdjacencyMatrixGraph<T> {
 			return;
 		}
 		
+		System.out.println("CandidatesOrNot: " + candidatesOrNot);
+		
 		// Use Tomita's pivot heuristic to restrict the recursive calls 
 		// needed.
 		//
@@ -708,9 +729,9 @@ public class AdjacencyMatrixGraph<T> {
 			}
 		}
 		
-		// Standard Bron-Kerbosch would not do the below line and would jump straight to the
-		// backtracking loop bit
+		// Standard Bron-Kerbosch would do line #2 (provided for debugging purposes), line #1 is tomita optimized
 		Set<T> verticesToIter = nonDestructiveDifference(candidates, this.successorSet(pivot));
+		//Set<T> verticesToIter = new HashSet<T>(candidates);
 		for(T vertex: verticesToIter) {
 			// A set containing just one element: the vertex in question
 			//
@@ -725,8 +746,10 @@ public class AdjacencyMatrixGraph<T> {
 			this.extend(maxCliques, newVerticesOfPartialClique, newCandidates, newNot);
 			
 			// Add vertex to not and remove from candidates
-			candidates.removeAll(vertexSet);
-			not.addAll(vertexSet);
+			candidates = this.nonDestructiveDifference(candidates, vertexSet);
+			not = this.nonDestructiveUnion(not, vertexSet);
+			//candidates.removeAll(vertexSet);
+			//not.addAll(vertexSet);
 		}
 	}
 	

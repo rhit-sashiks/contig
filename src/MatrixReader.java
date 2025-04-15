@@ -9,6 +9,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Scanner;
 import java.util.Set;
+import java.util.TreeSet;
 
 public class MatrixReader {
 	public static void main(String[] args) {
@@ -29,6 +30,7 @@ public class MatrixReader {
 	
 		AdjacencyMatrixGraph<String> G = null;
 		
+		boolean initialComplement = false;
 		try {
 			// Thanks to https://www.baeldung.com/java-current-directory
 			String userDir = new File("").getAbsolutePath();
@@ -38,9 +40,24 @@ public class MatrixReader {
 			bufr = new BufferedReader(f);
 			
 			// Look at first line
-			String firstLine = bufr.readLine();
+			String firstLine = null;
+			while(true) {
+				firstLine = bufr.readLine();
+				System.out.println("FirstLine " + firstLine);
+				
+				if(firstLine.startsWith("#")) {
+					continue;
+				}
+				
+				if(firstLine.startsWith("@asComplement")) {
+					initialComplement = true;
+					continue;
+				}
+				
+				break;
+			}
 			
-			Set<String> keys = new HashSet<>();
+			Set<String> keys = new TreeSet<>();
 			
 			int matrixSize = 0;
 			for(int i = 0; i < firstLine.length(); i++) {
@@ -52,9 +69,12 @@ public class MatrixReader {
 				matrixSize++;
 			}
 			
+			System.out.println("Matrix Size: " + matrixSize + "\nFirst Line: " + firstLine);
+			
 			int[][] matrix = new int[matrixSize][matrixSize];
 			
 			char startCh = 'A';
+			int atIdx = 0;
 			for(int i = 0; i < firstLine.length(); i++) {
 				char ch = firstLine.charAt(i);
 				if (ch == ',' || ch == ' ') {
@@ -62,13 +82,14 @@ public class MatrixReader {
 				}
 				
 				// Add to keyset
-				System.out.println("Keyset: " + keys);
 				keys.add(startCh + "");
+				System.out.println("Keyset: " + keys + "\ni: " + i);
 				startCh += 1;
 				
 				if(ch == '1') {
-					matrix[0][i] = 1;
+					matrix[0][atIdx] = 1;
 				}
+				atIdx++;
 			}
 			
 			// Now go to the rest of the lines
@@ -79,15 +100,18 @@ public class MatrixReader {
 					break;
 				}
 				
-				for(int j = 0; j < keys.size(); j++) {
+				atIdx = 0;
+				for(int j = 0; j < s.length(); j++) {
 					char ch = s.charAt(j);
 					if (ch == ',' || ch == ' ') {
 						continue;
 					}
 
 					if(ch == '1') {
-						matrix[i][j] = 1;
+						matrix[i][atIdx] = 1;
 					}
+					
+					atIdx++;
 				}
 				
 				i++;
@@ -111,8 +135,15 @@ public class MatrixReader {
 				return;
 			}
 		}
+		
+		if(initialComplement) {
+			G.setIsComplement(true);
+		}
+		
+		System.out.println("Adjacency Matrix Of G:\n" + G.adjacencyMatrix());
 
 		// Actual contig assembly here
+		System.out.println("Edges: " + G.edgeSet());
 		ArrayList<Set<String>> maxCliques = G.maxCliques();
 		System.out.println("Max Cliques: " + maxCliques);
 		
@@ -132,10 +163,13 @@ public class MatrixReader {
 				
 		System.out.println("Unique Vertices Of Max Cliques: " + uniqueVerticesOfClique);
 		
-		G.setIsComplement(true);
+		G.setIsComplement(!G.isComplement());
+		
+		System.out.println("Adjacency Matrix Of G-complement:\n" + G.adjacencyMatrix());
+		
 		AdjacencyMatrixGraph.EdgeSet<String> transitiveOrientation = G.transitiveOrientation();
 		System.out.println("Transitive Orientation of complement: " + transitiveOrientation);
-		
+		System.out.println("TO Graph Adjacency Matrix:\n" + new AdjacencyMatrixGraph<String>(transitiveOrientation).adjacencyMatrix());
 		// Extract out the subgraph containing the max cliques from the EdgeSet<T>
 		AdjacencyMatrixGraph<String> cliqueSubgraph = transitiveOrientation.extractSubgraph(uniqueVerticesOfClique.keySet());
 		System.out.println("Clique Subgraph: " + cliqueSubgraph);
