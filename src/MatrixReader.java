@@ -2,6 +2,8 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -14,17 +16,42 @@ import java.util.TreeSet;
 public class MatrixReader {
 	public static void main(String[] args) {
 		String filename = null;
+		Scanner stdinReaderBuf = null;
 		try {
-			System.out.print("Enter file to read: ");
-			Scanner stdinReaderBuf = new Scanner(System.in);
+			System.out.print("Enter matrix file to read: ");
+			stdinReaderBuf = new Scanner(System.in);
 			filename = stdinReaderBuf.nextLine();
-			
-			stdinReaderBuf.close();
-		} catch (Exception err) {
-			err.printStackTrace();
+		} catch (Exception err) {			
+			// CITATION: https://stackoverflow.com/questions/1149703/how-can-i-convert-a-stack-trace-to-a-string
+			StringWriter sw = new StringWriter();
+			PrintWriter pw = new PrintWriter(sw);
+			err.printStackTrace(pw);
+			String sStackTrace = sw.toString(); // stack trace as a string
+			System.err.println(sStackTrace);
 			return;
 		}
 		
+		try {
+			MatrixReader.runApp(filename);
+		} catch (Exception exc) {
+			// CITATION: https://stackoverflow.com/questions/1149703/how-can-i-convert-a-stack-trace-to-a-string
+			StringWriter sw = new StringWriter();
+			PrintWriter pw = new PrintWriter(sw);
+			exc.printStackTrace(pw);
+			String sStackTrace = sw.toString(); // stack trace as a string
+			System.err.println(sStackTrace);
+		}
+		
+		System.err.flush();
+		System.out.flush();
+		
+		System.out.println("Press 'Enter' key to exit.");
+		
+		stdinReaderBuf.nextLine();
+		stdinReaderBuf.close();
+	}
+	
+	public static void runApp(String filename) {		
 		FileReader f;
 		BufferedReader bufr;
 	
@@ -119,7 +146,12 @@ public class MatrixReader {
 			
 			G = new AdjacencyMatrixGraph<>(keys, matrix);
 		} catch (IOException e) {
-			e.printStackTrace();
+			// CITATION: https://stackoverflow.com/questions/1149703/how-can-i-convert-a-stack-trace-to-a-string
+			StringWriter sw = new StringWriter();
+			PrintWriter pw = new PrintWriter(sw);
+			e.printStackTrace(pw);
+			String sStackTrace = sw.toString(); // stack trace as a string
+			System.err.println(sStackTrace);
 			return;
 		} 
 		
@@ -131,7 +163,12 @@ public class MatrixReader {
 					bufr.close();
 				}
 			} catch (IOException e) {
-				e.printStackTrace();
+				// CITATION: https://stackoverflow.com/questions/1149703/how-can-i-convert-a-stack-trace-to-a-string
+				StringWriter sw = new StringWriter();
+				PrintWriter pw = new PrintWriter(sw);
+				e.printStackTrace(pw);
+				String sStackTrace = sw.toString(); // stack trace as a string
+				System.err.println(sStackTrace);
 				return;
 			}
 		}
@@ -168,6 +205,12 @@ public class MatrixReader {
 		System.out.println("Adjacency Matrix Of G-complement:\n" + G.adjacencyMatrix());
 		
 		AdjacencyMatrixGraph.EdgeSet<String> transitiveOrientation = G.transitiveOrientation();
+
+		if(transitiveOrientation == null) {
+			System.err.println("[TO] Graph is not a valid transitively orientable graph");
+			return;
+		}
+		
 		System.out.println("Transitive Orientation of complement: " + transitiveOrientation);
 		System.out.println("TO Graph Adjacency Matrix:\n" + new AdjacencyMatrixGraph<String>(transitiveOrientation).adjacencyMatrix());
 		// Extract out the subgraph containing the max cliques from the EdgeSet<T>

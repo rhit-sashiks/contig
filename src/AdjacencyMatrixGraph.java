@@ -640,7 +640,7 @@ public class AdjacencyMatrixGraph<T> {
 				orientation = orientation.union(implicationClass); // Add Bi to F
 			} else {
 				System.out.println("[TO] Implication Classes ERROR: " + implicationClass.intersection(implicationClassFlipped));
-				throw new Error("[TO] Graph is not a valid transitively orientable graph");
+				return null;
 			}
 			
 			currentEdges = currentEdges.difference(implicationClass.symmetricClosure());
