@@ -659,9 +659,6 @@ public class AdjacencyMatrixGraph<T> {
 	// As maximum cliques (and Hamiltonian path) is the main NP complete bit
 	// of contig reassembly, it is the bit which needs
 	// to be fast
-	//
-	// IMPORTANT NOTE: While not explicitly documented, this algorithm seems to only produce results
-	// only produces results if A does not connect to itself
 	public ArrayList<Set<T>> maxCliques() {
 		if(this.indexToKey.isEmpty()) {
 			return new ArrayList<>();
